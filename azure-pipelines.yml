@@ -1,0 +1,136 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  name: ADO-Agent
+  demands:
+    - agent.name -equals ado-agent
+
+variables:
+  imageName: bankapp
+  k8sNamespace: bankapp
+  acrLoginServer: placeholder.azurecr.io
+  imageTag: $(Build.BuildId)
+  fullImageName: $(acrLoginServer)/$(imageName):$(imageTag)
+
+stages:
+  - stage: build_and_test
+    displayName: Build and Test
+    jobs:
+      - job: maven
+        displayName: Maven Build
+        steps:
+          - task: Maven@4
+            displayName: Run unit tests
+            inputs:
+              mavenPomFile: 'pom.xml'
+              goals: 'clean test'
+              publishJUnitResults: true
+              testResultsFiles: '**/surefire-reports/TEST-*.xml'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '1.17'
+              mavenVersionOption: 'Default'
+              mavenAuthenticateFeed: false
+              effectivePomSkip: false
+              sonarQubeRunAnalysis: false
+
+  - stage: trivy_fs_scan
+    displayName: Trivy Filesystem Scan
+    dependsOn: build_and_test
+    jobs:
+      - job: scan_fs
+        displayName: Scan source code
+        steps:
+          - task: Bash@3
+            displayName: Trivy FS scan
+            inputs:
+              targetType: inline
+              script: |
+                set -e
+                mkdir -p "$(Build.ArtifactStagingDirectory)/reports"
+                docker run --rm \
+                  -v "$(Build.SourcesDirectory):/src" \
+                  -v "$(Build.ArtifactStagingDirectory)/reports:/reports" \
+                  aquasec/trivy:latest fs \
+                  --severity HIGH,CRITICAL \
+                  --exit-code 1 \
+                  --format table \
+                  --output /reports/trivy-fs-report.txt \
+                  /src
+          - publish: $(Build.ArtifactStagingDirectory)/reports
+            artifact: trivy-fs
+
+  - stage: docker_build_push
+    displayName: Build and Push Image
+    dependsOn: trivy_fs_scan
+    jobs:
+      - job: docker_image
+        displayName: Docker Build and Push
+        steps:
+          - task: Docker@2
+            displayName: Build and push image
+            inputs:
+              containerRegistry: 'Docker-ACR-connection'
+              repository: '$(imageName)'
+              command: 'buildAndPush'
+              Dockerfile: 'Dockerfile'
+              buildContext: '.'
+              tags: |
+                $(imageTag)
+
+  - stage: trivy_image_scan
+    displayName: Trivy Image Scan
+    dependsOn: docker_build_push
+    jobs:
+      - job: scan_image
+        displayName: Scan image
+        steps:
+          - task: Docker@2
+            displayName: Login to ACR
+            inputs:
+              containerRegistry: 'Docker-ACR-connection'
+              command: login
+          - task: Bash@3
+            displayName: Trivy image scan
+            inputs:
+              targetType: inline
+              script: |
+                set -e
+                mkdir -p "$(Build.ArtifactStagingDirectory)/reports"
+                docker run --rm \
+                  -v /var/run/docker.sock:/var/run/docker.sock \
+                  -v "$(Build.ArtifactStagingDirectory)/reports:/reports" \
+                  aquasec/trivy:latest image \
+                  --severity HIGH,CRITICAL \
+                  --exit-code 1 \
+                  --format table \
+                  --output /reports/trivy-image-report.txt \
+                  "$(fullImageName)"
+          - publish: $(Build.ArtifactStagingDirectory)/reports
+            artifact: trivy-image
+
+  - stage: deploy_to_aks
+    displayName: Deploy to AKS
+    dependsOn: trivy_image_scan
+    jobs:
+      - job: deploy
+        displayName: Apply manifests
+        steps:
+          - task: KubernetesManifest@1
+            displayName: Deploy to AKS
+            inputs:
+              action: deploy
+              kubernetesServiceConnection: 'AKS-Connection'
+              namespace: '$(k8sNamespace)'
+              manifests: |
+                k8s/00-namespace.yaml
+                k8s/01-secret.yaml
+                k8s/02-mysql-pvc.yaml
+                k8s/04-mysql-service.yaml
+                k8s/03-mysql-statefulset.yaml
+                k8s/05-app-deployment.yaml
+                k8s/06-app-service.yaml
+              containers: |
+                $(fullImageName)

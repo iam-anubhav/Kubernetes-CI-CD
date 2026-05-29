@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>BankApp Transactions</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<div class="container">
+    <div class="topbar">
+        <div>
+            <div class="brand">BankApp</div>
+            <p class="muted">Transaction history for <strong th:text="${account.username()}">user</strong></p>
+        </div>
+        <div class="actions">
+            <a class="btn secondary" th:href="@{/dashboard}">Back to Dashboard</a>
+            <form th:action="@{/logout}" method="post">
+                <button class="btn danger" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Source</th>
+                <th>Target</th>
+                <th>Created At</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="tx : ${transactions}">
+                <td th:text="${tx.transactionType()}">DEPOSIT</td>
+                <td th:text="${tx.amount()}">0.00</td>
+                <td th:text="${tx.sourceAccount()}">source</td>
+                <td th:text="${tx.targetAccount()}">target</td>
+                <td th:text="${tx.createdAt()}">date</td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(transactions)}">
+                <td colspan="5" class="muted center">No transactions yet</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

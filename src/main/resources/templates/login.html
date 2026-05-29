@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>BankApp Login</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<div class="page-shell">
+    <div class="card auth-card">
+        <div class="brand">BankApp</div>
+        <h1>Sign in</h1>
+        <p class="muted">Access your account, manage balance, and review transactions.</p>
+
+        <div class="alert success" th:if="${param.registered}">Registration successful. Please log in.</div>
+        <div class="alert success" th:if="${param.logout}">You have been logged out.</div>
+        <div class="alert error" th:if="${param.error}">Invalid username or password.</div>
+        <div class="alert success" th:if="${successMessage}" th:text="${successMessage}"></div>
+
+        <form th:action="@{/login}" method="post" class="form-stack">
+            <label>Username
+                <input type="text" name="username" placeholder="Enter username" required>
+            </label>
+            <label>Password
+                <input type="password" name="password" placeholder="Enter password" required>
+            </label>
+            <button type="submit" class="btn primary">Login</button>
+        </form>
+
+        <p class="muted center">
+            New here? <a th:href="@{/register}">Create an account</a>
+        </p>
+    </div>
+</div>
+</body>
+</html>

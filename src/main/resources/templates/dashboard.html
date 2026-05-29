@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>BankApp Dashboard</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<div class="container">
+    <div class="topbar">
+        <div>
+            <div class="brand">BankApp</div>
+            <p class="muted">Welcome, <strong th:text="${account.username()}">user</strong></p>
+        </div>
+        <div class="actions">
+            <a class="btn secondary" th:href="@{/transactions}">View Transactions</a>
+            <form th:action="@{/logout}" method="post">
+                <button class="btn danger" type="submit">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="alert success" th:if="${successMessage}" th:text="${successMessage}"></div>
+    <div class="alert error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+    <div class="grid">
+        <div class="card stat-card">
+            <p class="muted">Current Balance</p>
+            <h2 th:text="${account.balance()}">0.00</h2>
+        </div>
+        <div class="card stat-card">
+            <p class="muted">Account</p>
+            <h2 th:text="${account.username()}">username</h2>
+        </div>
+    </div>
+
+    <div class="grid two-col">
+        <div class="card">
+            <h3>Deposit</h3>
+            <form th:action="@{/dashboard/deposit}" th:object="${depositForm}" method="post" class="form-stack">
+                <label>Amount
+                    <input type="number" step="0.01" min="0.01" th:field="*{amount}" required>
+                </label>
+                <button class="btn primary" type="submit">Deposit</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h3>Withdraw</h3>
+            <form th:action="@{/dashboard/withdraw}" th:object="${withdrawForm}" method="post" class="form-stack">
+                <label>Amount
+                    <input type="number" step="0.01" min="0.01" th:field="*{amount}" required>
+                </label>
+                <button class="btn primary" type="submit">Withdraw</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Transfer</h3>
+        <form th:action="@{/dashboard/transfer}" th:object="${transferForm}" method="post" class="form-stack three-grid">
+            <label>To username
+                <input type="text" th:field="*{toUsername}" placeholder="recipient" required>
+            </label>
+            <label>Amount
+                <input type="number" step="0.01" min="0.01" th:field="*{amount}" required>
+            </label>
+            <div class="form-actions">
+                <button class="btn primary" type="submit">Transfer</button>
+            </div>
+        </form>
+    </div>
+</div>
+</body>
+</html>
