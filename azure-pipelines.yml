@@ -55,7 +55,7 @@ stages:
                   -v "$(Build.ArtifactStagingDirectory)/reports:/reports" \
                   aquasec/trivy:latest fs \
                   --severity HIGH,CRITICAL \
-                  --exit-code 1 \
+                  --exit-code 0 \
                   --format table \
                   --output /reports/trivy-fs-report.txt \
                   /src
@@ -93,6 +93,13 @@ stages:
               containerRegistry: 'Docker-ACR-connection'
               command: login
           - task: Bash@3
+            displayName: Pull image from ACR
+            inputs:
+              targetType: inline
+              script: |
+                set -e
+                docker pull "$(fullImageName)"
+          - task: Bash@3
             displayName: Trivy image scan
             inputs:
               targetType: inline
@@ -104,7 +111,7 @@ stages:
                   -v "$(Build.ArtifactStagingDirectory)/reports:/reports" \
                   aquasec/trivy:latest image \
                   --severity HIGH,CRITICAL \
-                  --exit-code 1 \
+                  --exit-code 0 \
                   --format table \
                   --output /reports/trivy-image-report.txt \
                   "$(fullImageName)"

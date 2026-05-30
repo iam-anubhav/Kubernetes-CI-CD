@@ -5,9 +5,9 @@ spring:
   application:
     name: bankapp
   datasource:
-    url: jdbc:mysql://${DB_HOST:mysql}:${DB_PORT:3306}/${DB_NAME:bankdb}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: ${DB_USER:bankuser}
-    password: ${DB_PASSWORD:bankpass}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/bankdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:bankpass}
   jpa:
     hibernate:
       ddl-auto: update
